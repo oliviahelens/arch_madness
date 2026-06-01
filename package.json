@@ -1,0 +1,20 @@
+{
+  "name": "arch_madness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Induction-vs-instruction experiment on a novel (Jane Street) puzzle. Arm A: solve from one worked example only. Arm B: same example plus the verbal rule.",
+  "scripts": {
+    "freeze": "tsx src/main.ts freeze",
+    "armA": "tsx src/main.ts armA",
+    "armB": "tsx src/main.ts armB"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.69.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2"
+  }
+}
