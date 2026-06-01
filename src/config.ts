@@ -26,6 +26,6 @@ export const EFFORT = (process.env.EFFORT ?? "high") as
   | "max";
 
 export const ASSETS = {
-  workedExample: "worked_example.png",
-  newInput: "new_input.png",
+  workedExample: "arch-madness_worked_example.jpg",
+  newInput: "arch-madness_input.jpg",
 } as const;
