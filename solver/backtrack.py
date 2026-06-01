@@ -9,9 +9,12 @@ Dead branches die early. Full smooth-score is verified at the leaf via the
 validated engine (solver.score_regions).
 """
 
+import os
 import sys
 import time
 from collections import defaultdict
+
+SMOOTH_PRUNE = os.environ.get("SMOOTH", "1") == "1"
 
 from regions import DSU, piece_on_edge
 from perimeter import analyze
@@ -120,7 +123,7 @@ def closure_ok(N, arcs, assigned, clues):
                 return False  # dangling arc
 
     clue_closed = {root: val for root, val in root_clue.items() if closed[root]}
-    if clue_closed:
+    if SMOOTH_PRUNE and clue_closed:
         sm = smooth_by_root(N, arcs, dsu)
         for root, val in clue_closed.items():
             full, D, S = info[root]
