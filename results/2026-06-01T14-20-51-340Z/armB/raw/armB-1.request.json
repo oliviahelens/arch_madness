@@ -1,0 +1,43 @@
+{
+  "model": "claude-opus-4-8",
+  "max_tokens": 128000,
+  "thinking": {
+    "type": "adaptive",
+    "display": "summarized"
+  },
+  "output_config": {
+    "effort": "high"
+  },
+  "system": "You are a careful, rigorous puzzle solver. Reason step by step.",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Here are the rules of the puzzle:\n\nDraw 90-degree arcs in some of the white cells. Arcs may not go in green cells. An arc has radius 1, connecting one corner of a cell to the opposite corner. (A cell may contain at most one arc.)\n\nWhen finished, the arcs must divide the grid into regions, and those regions must have integer area. (Arcs are not allowed to \"dangle\" – that is, the two parts of a cell containing an arc must belong to distinct regions.)\n\nFor each region, compute the number of \"smooth\" (continuously differentible) pieces that comprise its perimeter. Multiply that number by the region's area to get its SCORE.\n\nA cell labeled with a number indicates the score of the region that contains at least half (and possibly all) of that cell.\n\nAfter completing the grid, fill each of the un-numbered cells with the score of the region that contains at least half of that cell. The answer to this month's puzzle is the sum of the squares of the row sums, plus the sum of the squares of the column sums. (As in the example.)"
+        },
+        {
+          "type": "text",
+          "text": "Here is a fully worked example (the starting grid, the same puzzle solved with arcs drawn, and the cells filled in with each region's score), ending in the example answer:"
+        },
+        {
+          "type": "image",
+          "note": "<base64 elided>"
+        },
+        {
+          "type": "text",
+          "text": "Here is this month's puzzle for you to solve:"
+        },
+        {
+          "type": "image",
+          "note": "<base64 elided>"
+        },
+        {
+          "type": "text",
+          "text": "Solve the puzzle by these rules. Work carefully: place the arcs, determine the regions and their integer areas, compute each region's score, fill every cell, then compute the final answer. Manage your reasoning budget so you ALWAYS finish with the answer line — even if uncertain, commit to your single best-guess integer. End your response with the final answer on its own line, exactly in the form:\nANSWER: <integer>"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "model": "claude-opus-4-8",
+  "max_tokens": 32000,
+  "thinking": {
+    "type": "adaptive",
+    "display": "summarized"
+  },
+  "output_config": {
+    "effort": "high"
+  },
+  "system": "You are a careful, rigorous puzzle solver. Reason step by step.",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Here is one fully worked example of a puzzle: the starting grid, the same puzzle solved, and its final answer (a single integer)."
+        },
+        {
+          "type": "image",
+          "note": "<base64 elided>"
+        },
+        {
+          "type": "text",
+          "text": "Here is a new puzzle of the same kind for you to solve:"
+        },
+        {
+          "type": "image",
+          "note": "<base64 elided>"
+        },
+        {
+          "type": "text",
+          "text": "Study the worked example and infer how the puzzle works, then solve the new puzzle. Show your reasoning. End your response with the final answer on its own line, exactly in the form:\nANSWER: <integer>"
+        }
+      ]
+    }
+  ]
+}

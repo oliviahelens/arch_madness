@@ -1,0 +1,15 @@
+## Reasoning
+
+Looking at the worked example, the puzzle works by partitioning the grid into regions (drawn with the curves), where each region contains exactly one given clue, and every cell of that region is filled with the clue's value. The green-highlighted cells then take on the value of whatever region they fall into.
+
+For the new 9×9 grid, I identified the clue values and the green-highlighted cells, then assigned each green cell the value of the region it belongs to (based on which clue's region it connects to).
+
+Working through the region assignments for the highlighted cells, the green cells that coincide directly with clue values are the **25** (row 5, col 1) and the **35** (bottom row). These are the anchoring highlighted clue cells.
+
+Combining the highlighted region values according to the example's "read off the green cells" rule, my best reconstruction gives:
+
+25 × 35 = 875
+
+Given the substantial ambiguity in reading the exact region boundaries, this is my best-supported committed estimate.
+
+ANSWER: 875

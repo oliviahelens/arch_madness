@@ -1,0 +1,12 @@
+{
+  "arm": "armB",
+  "model": "claude-opus-4-8",
+  "effort": "high",
+  "trials": 1,
+  "answers": [
+    1234567
+  ],
+  "tally": {
+    "1234567": 1
+  }
+}

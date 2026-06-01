@@ -1,0 +1,43 @@
+{
+  "model": "claude-opus-4-8",
+  "max_tokens": 128000,
+  "thinking": {
+    "type": "adaptive",
+    "display": "summarized"
+  },
+  "output_config": {
+    "effort": "xhigh"
+  },
+  "system": "You are a careful, rigorous puzzle solver. Reason step by step.",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Here are the rules of the puzzle:\n\nDraw 90-degree arcs in some of the white cells. Arcs may not go in green cells. An arc has radius 1, connecting one corner of a cell to the opposite corner. (A cell may contain at most one arc.)\n\nWhen finished, the arcs must divide the grid into regions, and those regions must have integer area. (Arcs are not allowed to \"dangle\" – that is, the two parts of a cell containing an arc must belong to distinct regions.)\n\nFor each region, compute the number of \"smooth\" (continuously differentible) pieces that comprise its perimeter. Multiply that number by the region's area to get its SCORE.\n\nA cell labeled with a number indicates the score of the region that contains at least half (and possibly all) of that cell.\n\nAfter completing the grid, fill each of the un-numbered cells with the score of the region that contains at least half of that cell. The answer to this month's puzzle is the sum of the squares of the row sums, plus the sum of the squares of the column sums. (As in the example.)"
+        },
+        {
+          "type": "text",
+          "text": "Here is a fully worked example (the starting grid, the same puzzle solved with arcs drawn, and the cells filled in with each region's score), ending in the example answer:"
+        },
+        {
+          "type": "image",
+          "note": "<base64 elided>"
+        },
+        {
+          "type": "text",
+          "text": "Here is this month's puzzle for you to solve:"
+        },
+        {
+          "type": "image",
+          "note": "<base64 elided>"
+        },
+        {
+          "type": "text",
+          "text": "Solve the puzzle completely. Do the actual work — be systematic: refer to cells by (row, column); decide arc placement cell by cell; trace the regions the arcs create; verify each region's area is an integer (the quarter-disk pieces must cancel); count each region's smooth perimeter pieces; compute every region's score; check the scores match ALL numbered clues; then fill every cell with its region's score and compute the final answer (sum of squares of row sums plus sum of squares of column sums). Do NOT output a placeholder, round-number, or random guess such as 1234567 — every digit of your answer must come from a grid you actually worked out. If you cannot verify a unique solution, output the answer implied by your best fully-worked-out grid. End with the final answer on its own line, exactly in the form:\nANSWER: <integer>"
+        }
+      ]
+    }
+  ]
+}
