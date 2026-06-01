@@ -2,19 +2,27 @@ import fs from "node:fs";
 import path from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import { buildArmA } from "./prompts/armA.js";
+import { buildArmB } from "./prompts/armB.js";
 import { runArm } from "./run.js";
 import { assertNoLeak } from "./leakguard.js";
 import { FROZEN_DIR, MODEL } from "./config.js";
+import { FORBIDDEN_VOCAB } from "./rule.js";
+import { readoutAnswer, EXAMPLE_FILLED, EXAMPLE_ANSWER } from "./readout.js";
 
-/**
- * Arm A forbidden-terms list. EMPTY while Arm A is frozen blind.
- * After the verbal rule arrives (for Arm B), populate this with the rule text and
- * key rule vocabulary so any contamination of the Arm-A payload aborts the run.
- */
-const ARM_A_FORBIDDEN: string[] = [];
+/** Arm A must never contain the rule or its key vocabulary. */
+const ARM_A_FORBIDDEN: string[] = FORBIDDEN_VOCAB;
 
 async function main() {
   const cmd = process.argv[2] ?? "armA";
+
+  if (cmd === "validate") {
+    // Machine-check the read-out function against the published example.
+    const got = readoutAnswer(EXAMPLE_FILLED);
+    const ok = got === EXAMPLE_ANSWER;
+    console.log(`read-out(example) = ${got}  expected ${EXAMPLE_ANSWER}  -> ${ok ? "PASS" : "FAIL"}`);
+    if (!ok) process.exit(1);
+    return;
+  }
 
   if (cmd === "check") {
     // Confirm the key can actually retrieve the target model (4.8, not 4.7).
@@ -61,13 +69,11 @@ async function main() {
   }
 
   if (cmd === "armB") {
-    throw new Error(
-      "Arm B is not built yet — it awaits the verbal rule. Once provided, " +
-        "src/rule.ts + src/prompts/armB.ts will be added and ARM_A_FORBIDDEN populated.",
-    );
+    await runArm("armB", buildArmB, []); // Arm B is the full-prompt arm; no forbidden terms.
+    return;
   }
 
-  throw new Error(`Unknown command: ${cmd} (use: freeze | armA | armB)`);
+  throw new Error(`Unknown command: ${cmd} (use: validate | check | freeze | armA | armB)`);
 }
 
 main().catch((err) => {
