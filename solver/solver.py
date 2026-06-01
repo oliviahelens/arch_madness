@@ -51,8 +51,13 @@ def score_regions(N, arcs):
     root_of = reg["root_of"]
     area = reg["region_area"]
     faces = analyze(N, arcs)
+    # The unbounded/outer face encloses the whole grid (polygon area ~ N^2);
+    # exclude it so its boundary isn't mis-attributed to a real region.
+    outer = max(faces, key=lambda f: f["area"])
     smooth = defaultdict(int)
     for f in faces:
+        if f is outer:
+            continue
         ip = interior_point(f)
         if ip is None:
             continue
