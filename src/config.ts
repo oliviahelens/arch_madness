@@ -14,8 +14,10 @@ export const MODEL = process.env.MODEL ?? "claude-opus-4-8";
 /** Sampled trials per arm — a single instance needs repeats to get a pass rate. */
 export const NUM_TRIALS = Number(process.env.NUM_TRIALS ?? 8);
 
-/** Generous ceiling: reasoning + a one-integer answer. Streaming, so timeouts are not a concern. */
-export const MAX_TOKENS = Number(process.env.MAX_TOKENS ?? 32000);
+/** Generous ceiling: this is a hard induction task and adaptive thinking eats budget.
+ *  32k got fully consumed by reasoning before any answer; Opus 4.8 allows up to 128k
+ *  with streaming. Stay high so the model can think AND still emit the answer line. */
+export const MAX_TOKENS = Number(process.env.MAX_TOKENS ?? 64000);
 
 /** Effort for a hard reasoning/induction task. high|xhigh are the sweet spots on Opus 4.8. */
 export const EFFORT = (process.env.EFFORT ?? "high") as

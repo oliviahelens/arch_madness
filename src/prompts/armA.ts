@@ -27,8 +27,11 @@ export function buildArmA(): {
   const labelNew = "Here is a new puzzle of the same kind for you to solve:";
   const instruction =
     "Study the worked example and infer how the puzzle works, then solve the " +
-    "new puzzle. Show your reasoning. End your response with the final answer " +
-    "on its own line, exactly in the form:\nANSWER: <integer>";
+    "new puzzle. Show your reasoning, but manage your reasoning budget so that " +
+    "you ALWAYS finish with the answer line — even if you are not fully certain, " +
+    "commit to your single best-guess integer rather than leaving it blank. End " +
+    "your response with the final answer on its own line, exactly in the form:\n" +
+    "ANSWER: <integer>";
 
   const messages: Anthropic.MessageParam[] = [
     {
