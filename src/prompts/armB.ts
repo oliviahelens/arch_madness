@@ -22,12 +22,17 @@ export function buildArmB(): {
     "Here is a fully worked example (the starting grid, the same puzzle solved with arcs drawn, and the cells filled in with each region's score), ending in the example answer:";
   const labelNew = "Here is this month's puzzle for you to solve:";
   const instruction =
-    "Solve the puzzle by these rules. Work carefully: place the arcs, determine the " +
-    "regions and their integer areas, compute each region's score, fill every cell, " +
-    "then compute the final answer. Manage your reasoning budget so you ALWAYS finish " +
-    "with the answer line — even if uncertain, commit to your single best-guess integer. " +
-    "End your response with the final answer on its own line, exactly in the form:\n" +
-    "ANSWER: <integer>";
+    "Solve the puzzle completely. Do the actual work — be systematic: refer to cells " +
+    "by (row, column); decide arc placement cell by cell; trace the regions the arcs " +
+    "create; verify each region's area is an integer (the quarter-disk pieces must " +
+    "cancel); count each region's smooth perimeter pieces; compute every region's " +
+    "score; check the scores match ALL numbered clues; then fill every cell with its " +
+    "region's score and compute the final answer (sum of squares of row sums plus sum " +
+    "of squares of column sums). Do NOT output a placeholder, round-number, or random " +
+    "guess such as 1234567 — every digit of your answer must come from a grid you " +
+    "actually worked out. If you cannot verify a unique solution, output the answer " +
+    "implied by your best fully-worked-out grid. End with the final answer on its own " +
+    "line, exactly in the form:\nANSWER: <integer>";
 
   const messages: Anthropic.MessageParam[] = [
     {
