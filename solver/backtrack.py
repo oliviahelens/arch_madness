@@ -83,35 +83,49 @@ def is_open(N, arcs, assigned, p):
 
 def closure_ok(N, arcs, assigned, clues):
     dsu, comp = partial_components(N, arcs, assigned)
-    closed_area = {}        # root -> area, for closed regions
-    clue_roots = {}         # root -> required score, for closed regions with a clue
+    info = {}        # root -> (full, D, S)
+    closed = {}      # root -> bool
     for root, ps in comp.items():
-        if any(is_open(N, arcs, assigned, p) for p in ps):
-            continue  # still growable
-        full = sum(1 for p in ps if p[2] == "W")
-        D = sum(1 for p in ps if p[2] == "D")
-        S = sum(1 for p in ps if p[2] == "S")
+        info[root] = (sum(p[2] == "W" for p in ps),
+                      sum(p[2] == "D" for p in ps),
+                      sum(p[2] == "S" for p in ps))
+        closed[root] = not any(is_open(N, arcs, assigned, p) for p in ps)
+
+    # Clue value(s) attached to each region (by label piece).
+    root_clue = {}
+    for (r, c), val in clues.items():
+        if (r, c) in assigned:
+            lp = (r, c, "W") if (r, c) not in arcs else (r, c, "D")
+            root = dsu.find(lp)
+            if root in root_clue and root_clue[root] != val:
+                return False  # two distinct clues in one region
+            root_clue[root] = val
+
+    # Open-region lower bound: committed labeled cells (full+disk) <= clue,
+    # because final score = smooth*area >= area >= committed cells.
+    for root, val in root_clue.items():
+        full, D, S = info[root]
+        if full + D > val:
+            return False
+
+    # Closed-region exact checks.
+    for root, ps in comp.items():
+        if not closed[root]:
+            continue
+        full, D, S = info[root]
         if D != S:
-            return False  # closed region with non-integer area
-        area = full + D
+            return False  # non-integer area
         for (r, c) in {(p[0], p[1]) for p in ps if p[2] in ("D", "S")}:
             if dsu.find((r, c, "D")) == dsu.find((r, c, "S")):
                 return False  # dangling arc
-        closed_area[root] = area
-        for (r, c), val in clues.items():
-            if (r, c) in assigned:
-                lp = (r, c, "W") if (r, c) not in arcs else (r, c, "D")
-                if dsu.find(lp) == root:
-                    if area == 0 or val % area != 0:
-                        return False
-                    if root in clue_roots and clue_roots[root] != val:
-                        return False  # two different clues in one region
-                    clue_roots[root] = val
-    if clue_roots:
+
+    clue_closed = {root: val for root, val in root_clue.items() if closed[root]}
+    if clue_closed:
         sm = smooth_by_root(N, arcs, dsu)
-        for root, val in clue_roots.items():
-            if sm.get(root, 0) * closed_area[root] != val:
-                return False  # closed clue region: exact score must match
+        for root, val in clue_closed.items():
+            full, D, S = info[root]
+            if sm.get(root, 0) * (full + D) != val:
+                return False  # exact score mismatch
     return True
 
 
