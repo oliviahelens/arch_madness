@@ -92,7 +92,11 @@ export async function runArm(
     if (thinking) fs.writeFileSync(path.join(rawDir, `${arm}-${trial}.thinking.txt`), thinking);
     fs.writeFileSync(
       path.join(rawDir, `${arm}-${trial}.meta.json`),
-      JSON.stringify({ answer, stop_reason: final.stop_reason, usage: final.usage }, null, 2),
+      JSON.stringify(
+        { answer, model: final.model, stop_reason: final.stop_reason, usage: final.usage },
+        null,
+        2,
+      ),
     );
 
     console.log(`[${arm}] trial ${trial}/${NUM_TRIALS} -> ${answer ?? "PARSE_FAIL"}`);

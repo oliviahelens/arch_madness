@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Induction-vs-instruction experiment on a novel (Jane Street) puzzle. Arm A: solve from one worked example only. Arm B: same example plus the verbal rule.",
   "scripts": {
+    "check": "tsx src/main.ts check",
     "freeze": "tsx src/main.ts freeze",
     "armA": "tsx src/main.ts armA",
     "armB": "tsx src/main.ts armB"

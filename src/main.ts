@@ -1,9 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
+import Anthropic from "@anthropic-ai/sdk";
 import { buildArmA } from "./prompts/armA.js";
 import { runArm } from "./run.js";
 import { assertNoLeak } from "./leakguard.js";
-import { FROZEN_DIR } from "./config.js";
+import { FROZEN_DIR, MODEL } from "./config.js";
 
 /**
  * Arm A forbidden-terms list. EMPTY while Arm A is frozen blind.
@@ -14,6 +15,16 @@ const ARM_A_FORBIDDEN: string[] = [];
 
 async function main() {
   const cmd = process.argv[2] ?? "armA";
+
+  if (cmd === "check") {
+    // Confirm the key can actually retrieve the target model (4.8, not 4.7).
+    // A 404 here means the account lacks access — the API never silently downgrades.
+    if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not set.");
+    const client = new Anthropic();
+    const m = await client.models.retrieve(MODEL);
+    console.log(`Model access confirmed: id=${m.id} display_name=${m.display_name}`);
+    return;
+  }
 
   if (cmd === "freeze") {
     // Build the Arm-A payload, run the leak guard, and write the frozen text
