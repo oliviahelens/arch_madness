@@ -12,6 +12,7 @@ validated engine (solver.score_regions).
 import os
 import sys
 import time
+import random
 from collections import defaultdict
 
 SMOOTH_PRUNE = os.environ.get("SMOOTH", "1") == "1"
@@ -132,8 +133,20 @@ def closure_ok(N, arcs, assigned, clues):
     return True
 
 
-def solve(N, clues, green, time_limit=120, want=None):
+def solve(N, clues, green, time_limit=120, want=None, seed=None, arcs_first=False,
+          stop_first=False):
     order = [(r, c) for r in range(N) for c in range(N)]
+    # Per-cell value ordering. Default tries None first; arcs_first flips that;
+    # a seed gives each cell a random preference order (for randomized restarts).
+    vorder = None
+    if seed is not None:
+        rng = random.Random(seed)
+        vorder = {}
+        for cell in order:
+            d = ["TL", "TR", "BL", "BR", None]
+            rng.shuffle(d)
+            vorder[cell] = tuple(d)
+    base = ("TL", "TR", "BL", "BR", None) if arcs_first else DIRS
     assign = {}
     assigned = set()
     arcs = {}
@@ -155,7 +168,7 @@ def solve(N, clues, green, time_limit=120, want=None):
                     print(f"  SOLUTION answer={ans}")
             return
         r, c = order[i]
-        domain = (None,) if (r, c) in green else DIRS
+        domain = (None,) if (r, c) in green else (vorder[(r, c)] if vorder else base)
         for v in domain:
             stats["nodes"] += 1
             assign[(r, c)] = v
@@ -164,7 +177,7 @@ def solve(N, clues, green, time_limit=120, want=None):
                 arcs[(r, c)] = v
             if closure_ok(N, arcs, assigned, clues):
                 rec(i + 1)
-                if want is not None and sols and sols[-1][1] == want:
+                if (stop_first and sols) or (want is not None and sols and sols[-1][1] == want):
                     return
             assigned.discard((r, c))
             assign.pop((r, c), None)
