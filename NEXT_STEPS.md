@@ -28,7 +28,24 @@ Sibling to `oliviahelens/CoGL_automaton`.
 - ✅ Arm A frozen → `frozen/armA/payload.json` (two images + neutral text, no rule).
 - ⏳ API key: added to the environment config by the user. A NEW session is needed for
   the container to have `ANTHROPIC_API_KEY`.
-- ⏳ Arm B / `src/rule.ts` / solver: NOT built yet — await the rule (after Arm A runs).
+- ⏳ `src/rule.ts` / `src/prompts/armB.ts` (the TS Arm-B builder): still NOT built.
+
+## Solver / ground-truth side (the rule arrived)
+- ✅ The verbal rule was received and implemented as a **deterministic engine** in
+  `solver/` (Python). It **reproduces the worked example = 18,928**. Full rule write-up,
+  approaches, and findings: **`solver/README.md`** (read this).
+- ✅ 9×9 transcription (`solver/input.py`) **verified against `assets/arch-madness_input.jpg`**
+  (all 18 clues + 20 greens, incl. the two clued-green cells (4,0)=25 and (8,5)=35).
+- ❌ **The 9×9 answer is NOT yet extracted.** The search space (arcs `~5^61`, or the
+  merged-region tilings) is too large and the smooth-count is a geometric black box that
+  blocks clean constraint propagation. Many sound approaches were built — backtracking,
+  stochastic search, Fillomino-style merging tilings + an engine-verified arc realizer,
+  a per-shape realizability oracle — none cracks it. See `solver/README.md` → *Status & open problem*.
+- ▶️ **To get a verified answer:** put the solved arcs in `solver/solution.json` and run
+  `python3 solver/verify_solution.py` — it re-derives all 18 clue scores + the read-out
+  through the engine. This is the dependable path; do NOT trust an unverified number.
+- ⚠️ The Arm-A blind pipeline must still never see the rule — keep rule text out of
+  `src/prompts/armA.ts`. (Arm A is already frozen, so it is safe regardless.)
 
 ## Command sequence for the new session
 ```bash

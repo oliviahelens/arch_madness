@@ -39,13 +39,19 @@ to get an answer distribution rather than a single sample.
 
 ## Status
 
-- ✅ Arm A pipeline (blind: images + neutral instructions only).
-- ⏳ Drop images into `assets/` (`worked_example.png`, `new_input.png`) — see
-  `assets/README.md`.
-- ⏳ Set `ANTHROPIC_API_KEY` in the environment.
-- ⏳ After Arm A is frozen + run, the verbal rule arrives → add the deterministic
-  solver (validated to reproduce 18,928), `src/rule.ts`, and `src/prompts/armB.ts`,
-  and populate the Arm-A leak-guard list.
+- ✅ Arm A pipeline (blind: images + neutral instructions only); frozen to
+  `frozen/armA/payload.json`.
+- ✅ Images in `assets/` (`arch-madness_worked_example.jpg`, `arch-madness_input.jpg`).
+- ⏳ Set `ANTHROPIC_API_KEY` in the environment, then run Arm A.
+- ✅ **Deterministic engine built** in `solver/` (Python) — implements the rule and
+  **reproduces the worked example = 18,928**. See **[`solver/README.md`](solver/README.md)**
+  for the rule write-up, every search approach tried, and findings.
+  - ⚠️ The 9×9 puzzle answer is **not yet computationally extracted** (search space too
+    large; the smooth-count is a geometric black box that blocks propagation). The
+    dependable path to a *verified* number is `solver/verify_solution.py` on a solved
+    arc grid.
+- ⏳ TS Arm-B builder (`src/rule.ts`, `src/prompts/armB.ts`) + Arm-A leak-guard list:
+  not built yet.
 
 ## Run
 
