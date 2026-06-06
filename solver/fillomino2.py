@@ -13,9 +13,10 @@ import input as data
 
 # per-value allowed region sizes (area). Tight-but-reasonable; broaden if needed.
 ALLOWED = {
-    # area-3 maxes at smooth 7, so clue 27 (needs smooth 9) cannot be size 3
-    # -> size 9 (smooth 3). A single 9-clue at size 9 (smooth 1) is implausible.
-    9: (3,), 15: (3, 5), 21: (3, 7), 25: (5,), 27: (9,),
+    # Sound oracle (shapecheck.py) facts: size-3 can only reach smooth {3,5}
+    # (at a border), so clue 21 (needs smooth 7) and clue 27 (smooth 9) cannot be
+    # size 3 -> 21 is size 7 (smooth 3), 27 is size 9 (smooth 3).
+    9: (3,), 15: (3, 5), 21: (7,), 25: (5,), 27: (9,),
     35: (5, 7), 45: (5, 9), 63: (7, 9),
 }
 ALLOWED_288 = (12, 16, 18, 24, 32, 36, 48)
@@ -24,11 +25,13 @@ NB = ((0, 1), (1, 0), (0, -1), (-1, 0))
 
 
 def solve(N, clues, time_limit=600, seed=None, on_tiling=None, verbose=False,
-          shard=(0, 1)):
+          shard=(0, 1), green=frozenset(), oracle=False, oracle_max=7):
     rng = random.Random(seed) if seed is not None else None
+    if oracle:
+        from shapecheck import can_realize_shape
     seedset = set(clues)
     grow_order = [c for c in clues if c != SEA]
-    # process order: regions with larger max size later (small first), 288 leftover
+    # process order: small flexible regions first; 288 is the leftover.
     grow_order.sort(key=lambda c: (max(ALLOWED[clues[c]]),
                                     rng.random() if rng else c))
     shard_id, shard_mod = shard
@@ -168,7 +171,13 @@ def solve(N, clues, time_limit=600, seed=None, on_tiling=None, verbose=False,
                     covered.add(cell); added.append(cell)
             ok = False
             do_recurse = True
-            if gi == 1 and shard_mod > 1:     # shard on first TWO regions (finer)
+            # SOUND prune: if this region's shape provably cannot realize its
+            # required smooth (area*smooth=value), kill the branch.
+            if oracle and A <= oracle_max:
+                if can_realize_shape(frozenset(members), N, v // A,
+                                     time_budget=3.0, green=green) is False:
+                    do_recurse = False
+            if do_recurse and gi == 1 and shard_mod > 1:   # finer shard on 2 regions
                 b = st_branch[0]; st_branch[0] += 1
                 do_recurse = (b % shard_mod == shard_id)
             if do_recurse and feasible():

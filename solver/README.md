@@ -85,7 +85,8 @@ python3 -c "import solver,input as d; print(solver.readout(4, solver.score_regio
 | `fillomino2.py` | **merging-aware** tiling (equal-valued clues may share a region) + a **subset-sum feasibility** prune | sound & ~7× faster enumeration, but the space is astronomically large |
 | `realize.py`, `realize2.py` | turn a fixed tiling into arcs, enforcing the partition + each region's exact `area×smooth=clue`, engine-verified at the leaf | correct (4×4 → 18928 in ~200 nodes), ~1 ms per tiling |
 | `driver*.py` | parallel / work-stealing streaming of tilings → realizer | full CPU use; never reaches the solution |
-| `shapecheck.py` | **sound per-shape realizability oracle** (a region's validity + smooth are determined locally) | correct, but too slow to confirm/refute within budget |
+| `shapecheck.py` | **sound per-shape realizability oracle** — `can_realize_shape(cells, N, smooth, green)`. A region's validity + smooth are determined by its own cells' arcs plus the sea cells forced to sliver into its label-edges; enumerating those is COMPLETE, so a False is a sound refutation. Localized to a small window; persistent cache (`shapecache.pkl`). | **works**: instant for size ≤4, ~1s size-5, ~secs size-7 (when realizable; refutation slower); size-9 too slow. Validated: all 6 ground-truth 4×4 regions return True. |
+| `driver_oracle.py` | oracle-pruned tiling search + `realize2`, with persistent shape cache | prunes ~92% of small-region shapes; stalls on the same-value merge / area-budget interaction |
 | `test_example.py`, `test_gen.py` | engine/pruning correctness tests on random valid grids | pass |
 
 ```bash
@@ -109,15 +110,42 @@ python3 driver_mp3.py 600 4 4 128           # merging tiling search (won't finis
   random valid configs have at least one such region. So a connected-polyomino
   tiling model is not guaranteed to contain the solution.
 - A region's validity (integer area, no-dangling) and its smooth count are fully
-  determined by the arcs on the region's cells + their immediate neighbours —
-  **local**, hence the `shapecheck.py` oracle is *sound*. But the determining
-  search (region + neighbour ring) is large, so it can't be made fast.
+  determined by the arcs on the region's cells + the sea cells forced to sliver
+  into its label-edges — **local**, which makes the `shapecheck.py` oracle *sound*
+  and (after localization) fast enough for size ≤6.
+
+### Oracle-derived deductions (sound)
+- **size-3 regions can only reach smooth {3, 5}, and only at a border** (interior
+  small regions can't balance #disk = #sliver — borders remove edges that would
+  otherwise each force an inward sliver). Hence:
+  - clue 21 (=3×7) cannot be size 3 → **size 7, smooth 3**;
+  - clue 27 (=3×9) cannot be size 3 → **size 9, smooth 3**.
+- size-5 reaches smooth up to 9 (e.g. a U-pentomino at a corner), but again only
+  at the border; ~**92 % of small connected shapes are unrealizable** for the
+  smooth their clue requires.
+- Consequence: small clue regions must hug the grid border; interior clues' regions
+  must extend to a border or be large.
 
 ---
 
 ## Status & open problem
 
-The **engine is trusted** (reproduces 18,928). The **9×9 answer is not extracted.**
+The **engine is trusted** (reproduces 18,928). The **9×9 answer is not extracted**,
+but the `shapecheck.py` oracle added a genuinely new, sound pruning/deduction
+capability (see *Oracle-derived deductions*).
+
+**Current precise blocker (post-oracle):** with oracle pruning, the connected
+tiling search reaches ~13/17 regions but stalls on the same-value **merge /
+area-budget** interaction. Total region area must be 81; the three 27-clues placed
+as *separate* size-9 regions consume 27 cells and leave no room for 45/63/288, so
+they are *forced* to merge into one size-9 region — but the depth-first search
+explores the (astronomically many) non-merged size-9 shapes first. The size-7/9
+oracle is too slow to prune those large regions. The most promising next step is to
+**enumerate the feasible same-value groupings + sizes up front** (a small
+combinatorial problem fixed by the area budget), then grow + oracle-prune + realize
+each — instead of discovering merges by blind backtracking.
+
+Older framing (still relevant):
 
 Why it's hard: the real solution space is either the arcs (`~5^61`, no clean
 constraint propagation) or the merged-region tilings (astronomically many, and

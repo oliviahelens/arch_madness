@@ -86,15 +86,52 @@ def _smooth_of_root(N, arcs, dsu, root):
 
 
 _cache = {}
+AUTOSAVE = [False]
+_CACHE_FILE = __file__.rsplit("/", 1)[0] + "/shapecache.pkl"
 
 
-def can_realize_shape(cells_in, N, target_smooth, time_budget=2.0):
+def load_cache():
+    import pickle, os
+    if os.path.exists(_CACHE_FILE):
+        try:
+            with open(_CACHE_FILE, "rb") as f:
+                _cache.update(pickle.load(f))
+        except Exception:
+            pass
+    return len(_cache)
+
+
+def save_cache():
+    import pickle
+    with open(_CACHE_FILE, "wb") as f:
+        pickle.dump(_cache, f)
+    return len(_cache)
+
+
+def can_realize_shape(cells_in, N, target_smooth, time_budget=2.0, green=frozenset()):
     """cells_in: region cells in ACTUAL NxN coordinates. Out-of-grid neighbours
-    are the grid border (no cut / no sliver needed there)."""
-    cells = sorted(cells_in)
-    key = (frozenset(cells), N, target_smooth)
+    are the grid border (no cut / no sliver needed there). green cells in the
+    region are forced WHOLE (no arc)."""
+    cells0 = sorted(cells_in)
+    green0 = frozenset(c for c in cells0 if c in green)
+    key = (frozenset(cells0), N, target_smooth, green0)
     if key in _cache:
         return _cache[key]
+    # --- localize to a small square window (region validity+smooth are local) ---
+    r0 = min(r for r, c in cells0); r1 = max(r for r, c in cells0)
+    c0 = min(c for r, c in cells0); c1 = max(c for r, c in cells0)
+    h = r1 - r0 + 1; w = c1 - c0 + 1
+    top = 0 if r0 == 0 else 1; bot = 0 if r1 == N - 1 else 1
+    left = 0 if c0 == 0 else 1; right = 0 if c1 == N - 1 else 1
+    L = max(h + top + bot, w + left + right)
+    row_off = 0 if r0 == 0 else (L - h if r1 == N - 1 else 1)
+    col_off = 0 if c0 == 0 else (L - w if c1 == N - 1 else 1)
+
+    def remap(rc):
+        return (rc[0] - r0 + row_off, rc[1] - c0 + col_off)
+    cells = [remap(c) for c in cells0]
+    greenc = frozenset(remap(c) for c in green0)
+    N = L
     cellset = set(cells)
 
     def in_grid(rc):
@@ -118,69 +155,48 @@ def can_realize_shape(cells_in, N, target_smooth, time_budget=2.0):
         de = DISK_EDGES[K]
         return [e for e in ("T", "B", "L", "R") if e not in de]
 
-    # General SOUND search: assign arcs over shape cells + all edge/corner
-    # neighbours (those can affect R's boundary geometry). A shape cell's disk
-    # must stay in R; a shape cell MAY sliver toward another shape cell (the two
-    # slivers form an internal bridge region) -- so no structural shortcut.
-    ring = set()
-    for (r, c) in cells:
-        for dr in (-1, 0, 1):
-            for dc in (-1, 0, 1):
-                nb = (r + dr, c + dc)
-                if in_grid(nb) and nb not in cellset:
-                    ring.add(nb)
-    assignable = list(cells) + sorted(ring)
-    # boundary SEA edges that must be cut (label of shape cell != neighbour label)
-    cut_pairs = set()
-    for cell in cells:
-        r, c = cell
-        for d in sea_dir[cell]:
-            dr, dc = EDGE_D[d]; nb = (r + dr, c + dc)
-            cut_pairs.add(frozenset(((cell, d), (nb, OPP[d]))))
-
     start = time.time(); found = [False]; timed = [False]
-    arcs = {}; assigned = set()
 
-    def edge_cut(a, da, b, db):
-        # is the edge between a (dir da) and b (dir db) cut? (sliver on either side)
-        sa = arcs.get(a); sb = arcs.get(b)
-        return (sa is not None and da not in DISK_EDGES[sa]) or \
-               (sb is not None and db not in DISK_EDGES[sb])
-
-    def cut_ok_local(cell):
-        r, c = cell
-        for d in sea_dir.get(cell, []):
-            dr, dc = EDGE_D[d]; nb = (r + dr, c + dc)
-            if nb in assigned and not edge_cut(cell, d, nb, OPP[d]):
-                return False
-        # if cell is a ring cell, also check its edges to shape cells that are cuts
-        if cell not in cellset:
-            for d, (dr, dc) in EDGE_D.items():
-                nb = (r + dr, c + dc)
-                if nb in cellset and nb in assigned and not edge_cut(cell, d, nb, OPP[d]):
-                    return False
-        return True
-
-    def rec(i):
-        if found[0]:
-            return True
-        if time.time() - start > time_budget:
-            timed[0] = True; return True
-        if i == len(assignable):
-            if _validate_and_smooth(N, cells, cellset, dict(arcs)) == target_smooth:
-                found[0] = True
-            return found[0]
-        cell = assignable[i]
-        for v in (None,) + ARC:
-            if v is not None:
-                arcs[cell] = v
-            assigned.add(cell)
-            if cut_ok_local(cell):
-                rec(i + 1)
-            assigned.discard(cell); arcs.pop(cell, None)
-            if found[0] or timed[0]:
-                return found[0]
-        return False
+    def try_full(shape_arcs):
+        """shape_arcs: dict cell->arc|None for every region cell (ALL options).
+        R's boundary (hence its smooth) depends ONLY on R's cells' arcs plus the
+        sea cells that sliver into R's LABEL-edges. Every sea edge where R shows
+        its label MUST be cut by an inward sea sliver (else R merges with sea);
+        those inward slivers are exactly #sliver(R), which must == #disk(R)=D.
+        Enumerating those sea cells' arcs is COMPLETE for R's smooth -> a clean
+        exhaustion is a sound False."""
+        if found[0] or time.time() - start > time_budget:
+            if not found[0]:
+                timed[0] = True
+            return
+        D = sum(1 for cell in cells if shape_arcs[cell] is not None)
+        # sea cells forced to sliver into R, with the dirs (their view) they must cover
+        need = {}                    # sea cell -> set of sliver dirs it must show
+        for cell in cells:
+            K = shape_arcs[cell]
+            label = set(DISK_EDGES[K]) if K is not None else {"T", "B", "L", "R"}
+            for e in sea_dir[cell]:
+                if e in label:       # R shows its label across this sea edge
+                    dr, dc = EDGE_D[e]; oc = (cell[0] + dr, cell[1] + dc)
+                    need.setdefault(oc, set()).add(OPP[e])
+        if len(need) != D:           # integer area: #sliver(R)==#disk(R)
+            return
+        opts = []
+        for oc, dirs in need.items():
+            allow = [K for K in ARC if dirs <= set(sliver_edges(K))]
+            if not allow:
+                return
+            opts.append((oc, allow))
+        base = {c: a for c, a in shape_arcs.items() if a is not None}
+        cells_o = [oc for oc, _ in opts]; allows = [al for _, al in opts]
+        for choice in (product(*allows) if opts else [()]):
+            a = dict(base)
+            for oc, K in zip(cells_o, choice):
+                a[oc] = K
+            if _validate_and_smooth(N, cells, cellset, a) == target_smooth:
+                found[0] = True; return
+            if time.time() - start > time_budget:
+                timed[0] = True; return
 
     def _validate_and_smooth(N, cells, cellset, arcs):
         dsu, pieces = _build_dsu(N, arcs)
@@ -212,10 +228,21 @@ def can_realize_shape(cells_in, N, target_smooth, time_budget=2.0):
                 return None
         return _smooth_of_root(N, arcs, dsu, R)
 
-    rec(0)
+    cellopts = [((None,) if cell in greenc else ((None,) + ARC)) for cell in cells]
+    for combo in product(*cellopts):
+        if found[0] or time.time() - start > time_budget:
+            if not found[0]:
+                timed[0] = True
+            break
+        try_full(dict(zip(cells, combo)))
 
     res = None if (timed[0] and not found[0]) else found[0]
     _cache[key] = res
+    if AUTOSAVE[0] and len(_cache) % 50 == 0:
+        try:
+            save_cache()
+        except Exception:
+            pass
     return res
 
 
